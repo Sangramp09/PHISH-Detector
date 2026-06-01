@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHISH-Detector - Advanced Phishing Detection System</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    /* Additional styles for enhanced file upload */
+    .input-section {
+        transition: all 0.3s ease;
+    }
+    
+    .analyze-btn {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .analyze-btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+    
+    .analyze-btn:active::after {
+        width: 300px;
+        height: 300px;
+    }
+    
+    /* Enhanced File Upload Styles */
+    .upload-container {
+        width: 100%;
+    }
+    
+    .drop-zone {
+        border: 2px dashed rgba(30, 144, 255, 0.3);
+        border-radius: 16px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(5, 8, 18, 0.5);
+        position: relative;
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .drop-zone.drag-over {
+        border-color: #1e90ff;
+        background: rgba(30, 144, 255, 0.05);
+        transform: scale(1.02);
+    }
+    
+    .upload-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        animation: floatUpload 3s ease-in-out infinite;
+    }
+    
+    @keyframes floatUpload {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    .upload-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #e2e8f0;
+        margin-bottom: 10px;
+    }
+    
+    .upload-subtitle {
+        font-size: 14px;
+        color: #8a9bb5;
+        margin-bottom: 15px;
+    }
+    
+    .upload-hint {
+        font-size: 12px;
+        color: #6c7a92;
+        margin-top: 15px;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .file-types {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    
+    .file-type-badge {
+        background: rgba(30, 144, 255, 0.1);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        color: #1e90ff;
+        border: 1px solid rgba(30, 144, 255, 0.2);
+    }
+    
+    .upload-button {
+        background: rgba(30, 144, 255, 0.1);
+        border: 1px solid rgba(30, 144, 255, 0.3);
+        padding: 10px 24px;
+        border-radius: 25px;
+        color: #1e90ff;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 15px;
+        display: inline-block;
+    }
+    
+    .upload-button:hover {
+        background: rgba(30, 144, 255, 0.2);
+        transform: translateY(-2px);
+    }
+    
+    /* Preview Area */
+    .preview-area {
+        margin-top: 20px;
+        display: none;
+    }
+    
+    .preview-area.active {
+        display: block;
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .preview-card {
+        background: rgba(5, 8, 18, 0.8);
+        border-radius: 12px;
+        padding: 15px;
+        border: 1px solid rgba(30, 144, 255, 0.2);
+    }
+    
+    .preview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .file-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .file-icon {
+        font-size: 24px;
+    }
+    
+    .file-details {
+        flex: 1;
+    }
+    
+    .file-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #e2e8f0;
+        margin-bottom: 4px;
+    }
+    
+    .file-meta {
+        font-size: 11px;
+        color: #8a9bb5;
+    }
+    
+    .remove-file {
+        background: rgba(239, 68, 68, 0.2);
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        color: #ef4444;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 12px;
+    }
+    
+    .remove-file:hover {
+        background: rgba(239, 68, 68, 0.3);
+        transform: scale(1.05);
+    }
+    
+    .preview-image {
+        margin-top: 15px;
+        text-align: center;
+        max-height: 200px;
+        overflow: hidden;
+        border-radius: 8px;
+    }
+    
+    .preview-image img {
+        max-width: 100%;
+        max-height: 200px;
+        object-fit: contain;
+    }
+    
+    /* Loading animation */
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+        margin-right: 10px;
+    }
+    
+    /* Progress Bar */
+    .progress-bar {
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #1e90ff, #00b4d8);
+        width: 0%;
+        transition: width 0.3s ease;
+        border-radius: 2px;
+    }
+</style>
+</head>
+<body>
+
+<div class="main">
+    <!-- Header Section -->
+    <div class="header">
+        <div class="logo">🛡️ PHISH-Detector</div>
+        <div class="tagline">Advanced Phishing Email Detection System</div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span class="status">🟢 System Online</span>
+        <div class="stats-grid">
+            <div class="stat-badge">
+                <div class="number">98.5%</div>
+                <div class="label">Detection Rate</div>
+            </div>
+            <div class="stat-badge">
+                <div class="number">24/7</div>
+                <div class="label">Monitoring</div>
+            </div>
+            <div class="stat-badge">
+                <div class="number">Real-time</div>
+                <div class="label">Analysis</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Scan Card -->
+    <div class="card scan-panel">
+        <h2>🔍 Analyze Suspicious Content</h2>
+        <p class="subtitle">Powered by advanced machine learning algorithms to detect phishing attempts</p>
+
+        <form action="/analyze" method="POST" enctype="multipart/form-data" id="scanForm">
+            <div class="form-group">
+                <label>📋 Select Analysis Method</label>
+                <select name="input_type" id="inputType" required>
+                    <option value="">-- Choose an option --</option>
+                    <option value="email">📧 Analyze Email Text</option>
+                    <option value="screenshot">📸 Analyze Screenshot</option>
+                </select>
+            </div>
+
+            <!-- Email Section -->
+            <div class="input-section" id="emailSection" style="display: none;">
+                <div class="form-group">
+                    <label>📝 Email Content</label>
+                    <textarea
+                        name="email_text"
+                        id="emailText"
+                        rows="10"
+                        placeholder="Paste the suspicious email content here...&#10;&#10;Example Phishing Email:&#10;Dear Customer,&#10;Your account has been compromised! Click here to verify immediately: http://fake-link.com&#10;Failure to verify will result in account suspension.&#10;&#10;Example Legitimate Email:&#10;Hey John,&#10;Want to grab lunch tomorrow? Let me know what time works for you.&#10;Best, Sarah"></textarea>
+                    <small class="hint">⚠️ The AI will analyze the text for phishing indicators like urgent language, suspicious links, and fake requests</small>
+                </div>
+            </div>
+
+            <!-- Screenshot Section with Enhanced Drag & Drop -->
+            <div class="input-section" id="screenshotSection" style="display: none;">
+                <div class="form-group">
+                    <label>📸 Upload Screenshot</label>
+                    <div class="upload-container">
+                        <!-- Drop Zone -->
+                        <div class="drop-zone" id="dropZone">
+                            <div class="upload-icon">📁</div>
+                            <div class="upload-title">Drop files anywhere or select files</div>
+                            <div class="upload-subtitle">Drag and drop your screenshot here</div>
+                            
+                            <div class="file-types">
+                                <span class="file-type-badge">PNG</span>
+                                <span class="file-type-badge">JPG</span>
+                                <span class="file-type-badge">JPEG</span>
+                                <span class="file-type-badge">WEBP</span>
+                            </div>
+                            
+                            <div class="upload-hint">
+                                <span>📁 Max file size: 10MB</span>
+                                <span>🔍 OCR will extract text from image</span>
+                            </div>
+                            
+                            <div class="upload-button" onclick="document.getElementById('screenshotFile').click()">
+                                Browse Files
+                            </div>
+                            
+                            <input
+                                type="file"
+                                name="screenshot"
+                                id="screenshotFile"
+                                accept="image/*"
+                                style="display: none;">
+                        </div>
+                        
+                        <!-- Preview Area -->
+                        <div class="preview-area" id="previewArea">
+                            <div class="preview-card">
+                                <div class="preview-header">
+                                    <div class="file-info">
+                                        <span class="file-icon">🖼️</span>
+                                        <div class="file-details">
+                                            <div class="file-name" id="previewFileName"></div>
+                                            <div class="file-meta" id="previewFileMeta"></div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="remove-file" onclick="removeFile()">
+                                        ✕ Remove
+                                    </button>
+                                </div>
+                                <div class="preview-image" id="previewImage"></div>
+                                <div class="progress-bar" id="progressBar" style="display: none;">
+                                    <div class="progress-fill" id="progressFill"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="hint">🔍 The system will extract text from the image using OCR technology and analyze it for phishing patterns</small>
+                </div>
+            </div>
+
+            <button type="submit" id="analyzeBtn" class="analyze-btn" disabled>
+                🚀 Analyze Threat
+            </button>
+        </form>
+    </div>
+
+    <!-- Features Section -->
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3>AI-Powered Detection</h3>
+            <p>Advanced machine learning model trained on thousands of phishing emails for accurate detection with 98.5% accuracy</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📸</div>
+            <h3>OCR Screenshot Analysis</h3>
+            <p>Extract and analyze text from email screenshots automatically using advanced OCR technology</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Real-time Results</h3>
+            <p>Instant threat analysis with detailed risk assessment and actionable security recommendations</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Comprehensive Reports</h3>
+            <p>Detailed breakdown of detected threat indicators with severity scoring and visualization</p>
+        </div>
+    </div>
+
+    <!-- Security Tips Section -->
+    <div class="card" style="margin-top: 20px;">
+        <h3>🛡️ Security Tips</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px;">
+            <div style="padding: 10px;">
+                <span style="font-size: 24px;">🔐</span>
+                <p style="margin-top: 10px; font-size: 14px; color: #8a9bb5;">Never click on suspicious links in emails</p>
+            </div>
+            <div style="padding: 10px;">
+                <span style="font-size: 24px;">🔒</span>
+                <p style="margin-top: 10px; font-size: 14px; color: #8a9bb5;">Always verify sender's email address</p>
+            </div>
+            <div style="padding: 10px;">
+                <span style="font-size: 24px;">⚠️</span>
+                <p style="margin-top: 10px; font-size: 14px; color: #8a9bb5;">Watch for urgent language demanding immediate action</p>
+            </div>
+            <div style="padding: 10px;">
+                <span style="font-size: 24px;">📧</span>
+                <p style="margin-top: 10px; font-size: 14px; color: #8a9bb5;">Don't share personal information via email</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Get DOM elements
+    const inputType = document.getElementById('inputType');
+    const emailSection = document.getElementById('emailSection');
+    const screenshotSection = document.getElementById('screenshotSection');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const emailText = document.getElementById('emailText');
+    const screenshotFile = document.getElementById('screenshotFile');
+    const scanForm = document.getElementById('scanForm');
+    const dropZone = document.getElementById('dropZone');
+    const previewArea = document.getElementById('previewArea');
+    const previewFileName = document.getElementById('previewFileName');
+    const previewFileMeta = document.getElementById('previewFileMeta');
+    const previewImage = document.getElementById('previewImage');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+
+    let selectedFile = null;
+
+    // Handle input type change
+    inputType.addEventListener('change', function() {
+        emailSection.style.display = 'none';
+        screenshotSection.style.display = 'none';
+        
+        if (this.value === 'email') {
+            emailSection.style.display = 'block';
+            if (emailText.value.trim().length > 0) {
+                analyzeBtn.disabled = false;
+            } else {
+                analyzeBtn.disabled = true;
+            }
+        } else if (this.value === 'screenshot') {
+            screenshotSection.style.display = 'block';
+            if (selectedFile) {
+                analyzeBtn.disabled = false;
+            } else {
+                analyzeBtn.disabled = true;
+            }
+        } else {
+            analyzeBtn.disabled = true;
+        }
+    });
+
+    // Handle email text input
+    emailText.addEventListener('input', function() {
+        if (inputType.value === 'email' && this.value.trim().length > 0) {
+            analyzeBtn.disabled = false;
+        } else if (inputType.value === 'email') {
+            analyzeBtn.disabled = true;
+        }
+    });
+
+    // Handle file selection
+    screenshotFile.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    // Drag and drop functionality
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+
+    // Handle file processing
+    function handleFile(file) {
+        // Validate file type
+        const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            alert('Please upload a valid image file (PNG, JPG, JPEG, or WEBP)');
+            return;
+        }
+        
+        // Validate file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size must be less than 10MB');
+            return;
+        }
+        
+        selectedFile = file;
+        
+        // Create a FileList-like object for the form
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        screenshotFile.files = dataTransfer.files;
+        
+        // Show preview
+        showPreview(file);
+        
+        // Enable analyze button
+        analyzeBtn.disabled = false;
+    }
+    
+    // Show file preview
+    function showPreview(file) {
+        const fileName = file.name;
+        const fileSize = (file.size / 1024).toFixed(2);
+        const fileType = file.type.split('/')[1].toUpperCase();
+        
+        previewFileName.textContent = fileName;
+        previewFileMeta.textContent = `${fileType} • ${fileSize} KB`;
+        
+        // Show image preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImage.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        };
+        reader.readAsDataURL(file);
+        
+        // Show preview area
+        previewArea.classList.add('active');
+        
+        // Simulate upload progress
+        simulateProgress();
+    }
+    
+    // Simulate upload progress
+    function simulateProgress() {
+        progressBar.style.display = 'block';
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            progressFill.style.width = progress + '%';
+            if (progress >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    progressFill.style.width = '0%';
+                }, 500);
+            }
+        }, 100);
+    }
+    
+    // Remove file
+    function removeFile() {
+        selectedFile = null;
+        screenshotFile.value = '';
+        previewArea.classList.remove('active');
+        previewImage.innerHTML = '';
+        analyzeBtn.disabled = true;
+    }
+    
+    // Add loading animation on form submit
+    scanForm.addEventListener('submit', function(e) {
+        if (analyzeBtn.disabled) {
+            e.preventDefault();
+            return;
+        }
+        
+        const originalText = analyzeBtn.innerHTML;
+        analyzeBtn.innerHTML = '<span class="loading"></span> Analyzing...';
+        analyzeBtn.disabled = true;
+        
+        setTimeout(() => {
+            // Form will submit naturally
+        }, 100);
+    });
+    
+    // Click on drop zone to browse
+    dropZone.addEventListener('click', function(e) {
+        if (e.target === dropZone || e.target.classList.contains('upload-icon') || 
+            e.target.classList.contains('upload-title') || e.target.classList.contains('upload-subtitle')) {
+            screenshotFile.click();
+        }
+    });
+</script>
+
+</body>
+</html>

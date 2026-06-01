@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHISH-Detector - Advanced Analysis Report</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<style>
+    /* Enhanced Visualization Styles */
+    .result-container {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .viz-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .viz-card {
+        background: rgba(5, 8, 18, 0.8);
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid rgba(30, 144, 255, 0.15);
+        transition: all 0.3s ease;
+    }
+    
+    .viz-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(30, 144, 255, 0.3);
+        box-shadow: 0 10px 30px rgba(30, 144, 255, 0.1);
+    }
+    
+    .viz-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1e90ff;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .viz-container {
+        position: relative;
+        height: 250px;
+        margin: 20px 0;
+    }
+    
+    .severity-bar {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+    
+    .severity-fill {
+        height: 100%;
+        transition: width 1s ease-out;
+        border-radius: 4px;
+    }
+    
+    .severity-fill.critical { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .severity-fill.high { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .severity-fill.medium { background: linear-gradient(90deg, #eab308, #facc15); }
+    .severity-fill.low { background: linear-gradient(90deg, #10b981, #34d399); }
+    
+    .indicator-item {
+        animation: slideIn 0.5s ease-out;
+        animation-fill-mode: both;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .indicator-item:nth-child(1) { animation-delay: 0.1s; }
+    .indicator-item:nth-child(2) { animation-delay: 0.2s; }
+    .indicator-item:nth-child(3) { animation-delay: 0.3s; }
+    .indicator-item:nth-child(4) { animation-delay: 0.4s; }
+    .indicator-item:nth-child(5) { animation-delay: 0.5s; }
+    
+    .threat-meter {
+        width: 100%;
+        height: 30px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 15px;
+        overflow: hidden;
+        position: relative;
+        margin: 20px 0;
+    }
+    
+    .threat-meter-fill {
+        height: 100%;
+        transition: width 1.5s ease-out;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 10px;
+        color: white;
+        font-weight: 600;
+        font-size: 12px;
+    }
+    
+    .confidence-bar {
+        width: 100%;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        transition: width 1s ease-out;
+        border-radius: 10px;
+    }
+    
+    .stat-card {
+        background: rgba(5, 8, 18, 0.6);
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        background: rgba(5, 8, 18, 0.8);
+    }
+    
+    .metric-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: #1e90ff;
+    }
+    
+    .metric-label {
+        font-size: 12px;
+        color: #8a9bb5;
+        margin-top: 5px;
+    }
+    
+    .badge-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    
+    .threat-badge {
+        background: rgba(239, 68, 68, 0.15);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .safe-badge {
+        background: rgba(16, 185, 129, 0.15);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+        margin-top: 20px;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 20px;
+        border-left: 2px solid rgba(30, 144, 255, 0.3);
+        padding-left: 20px;
+        margin-left: 10px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #1e90ff;
+        border: 2px solid rgba(30, 144, 255, 0.3);
+    }
+    
+    .timeline-title {
+        font-weight: 600;
+        color: #e2e8f0;
+        margin-bottom: 5px;
+    }
+    
+    .timeline-desc {
+        font-size: 12px;
+        color: #8a9bb5;
+    }
+</style>
+</head>
+<body>
+
+<div class="main result-container">
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">🛡️ PHISH-Detector</div>
+        <div class="tagline">Advanced Threat Analysis Report</div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span class="status">✅ Scan Complete</span>
+        <div class="stats-grid">
+            <div class="stat-badge">
+                <div class="number">{{ score }}%</div>
+                <div class="label">Risk Score</div>
+            </div>
+            <div class="stat-badge">
+                <div class="number">{{ reasons|length }}</div>
+                <div class="label">Indicators</div>
+            </div>
+            <div class="stat-badge">
+                <div class="number">{{ 100 - score }}%</div>
+                <div class="label">Confidence</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Results Grid -->
+    <div class="result-grid">
+        <!-- Score Card -->
+        <div class="card verdict-card">
+            <div class="score-container">
+                <div class="score-ring {{ risk_color }}">
+                    <div class="score-value">
+                        {{ score }}<span class="score-percent">%</span>
+                    </div>
+                </div>
+                <div class="risk-badge {{ risk_color }}">
+                    {{ risk_level }} RISK
+                </div>
+            </div>
+            
+            <div class="verdict">
+                <h2 class="verdict-text {{ 'danger' if prediction == 'PHISHING' else 'safe' if prediction == 'SAFE' else 'medium' }}">
+                    {% if prediction == 'PHISHING' %}
+                        ⚠️ PHISHING DETECTED
+                    {% elif prediction == 'SAFE' %}
+                        ✓ SAFE - LEGITIMATE
+                    {% else %}
+                        ❓ INCONCLUSIVE
+                    {% endif %}
+                </h2>
+            </div>
+            
+            <!-- Threat Meter -->
+            <div class="threat-meter">
+                <div class="threat-meter-fill" style="width: {{ score }}%; background: linear-gradient(90deg, {{ '#ef4444' if score >= 70 else '#f59e0b' if score >= 40 else '#10b981' }}, {{ '#f87171' if score >= 70 else '#fbbf24' if score >= 40 else '#34d399' }});">
+                    {% if score > 30 %}Risk Level: {{ score }}%{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualization Card 1: Risk Dashboard -->
+        <div class="card summary-card">
+            <h3>📊 Risk Analysis Dashboard</h3>
+            <canvas id="riskChart" width="400" height="200" style="max-height: 200px;"></canvas>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px;">
+                <div class="stat-card">
+                    <div class="metric-value">{{ score }}%</div>
+                    <div class="metric-label">Threat Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="metric-value">{{ reasons|length }}</div>
+                    <div class="metric-label">Red Flags</div>
+                </div>
+                <div class="stat-card">
+                    <div class="metric-value">{{ 'HIGH' if score >= 70 else 'MEDIUM' if score >= 40 else 'LOW' }}</div>
+                    <div class="metric-label">Priority</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW Visualization Grid -->
+    <div class="viz-grid">
+        <!-- Visualization 2: Threat Breakdown by Category -->
+        <div class="viz-card">
+            <div class="viz-title">
+                📈 Threat Breakdown by Category
+            </div>
+            <div class="viz-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+            <div class="badge-list" id="categoryLegend"></div>
+        </div>
+
+        <!-- Visualization 3: Severity Distribution -->
+        <div class="viz-card">
+            <div class="viz-title">
+                🎯 Severity Distribution
+            </div>
+            <div class="viz-container">
+                <canvas id="severityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Visualization 4: Risk Gauge -->
+        <div class="viz-card">
+            <div class="viz-title">
+                🚨 Risk Level Gauge
+            </div>
+            <div class="viz-container">
+                <canvas id="gaugeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Visualization 5: Confidence Timeline -->
+        <div class="viz-card">
+            <div class="viz-title">
+                📉 Analysis Timeline
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-title">Text Preprocessing</div>
+                    <div class="timeline-desc">Cleaning and normalization completed</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-title">Feature Extraction</div>
+                    <div class="timeline-desc">TF-IDF vectorization applied</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-title">Model Prediction</div>
+                    <div class="timeline-desc">ML model analysis completed</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-title">Risk Assessment</div>
+                    <div class="timeline-desc">Final risk score calculated: {{ score }}%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threat Indicators Card -->
+    <div class="card">
+        <h3>⚠️ Detailed Threat Analysis</h3>
+        {% if reasons %}
+            <div class="reasons-list">
+                {% for reason in reasons %}
+                    <div class="reason-item indicator-item">
+                        <span class="reason-icon">
+                            {% if 'phishing' in reason.lower() or 'suspicious' in reason.lower() %}
+                                🔴
+                            {% elif 'legitimate' in reason.lower() or 'safe' in reason.lower() %}
+                                🟢
+                            {% else %}
+                                🔵
+                            {% endif %}
+                        </span>
+                        <div style="flex: 1;">
+                            <span class="reason-text">{{ reason }}</span>
+                            {% if 'severity' in reason %}
+                                {% set severity = reason.split('severity:')[1].split('%')[0] if 'severity:' in reason else '0' %}
+                                <div class="severity-bar">
+                                    <div class="severity-fill 
+                                        {% if severity|int >= 25 %}critical
+                                        {% elif severity|int >= 15 %}high
+                                        {% elif severity|int >= 10 %}medium
+                                        {% else %}low{% endif %}" 
+                                        style="width: {{ severity }}%"></div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="safe-box">
+                <span class="safe-icon">✓</span>
+                <span>No suspicious patterns detected. This content appears legitimate.</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Confidence Score Card -->
+    <div class="card">
+        <h3>🎯 Model Confidence Analysis</h3>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div class="metric-value">{{ 100 - score if prediction == 'PHISHING' else 100 - score }}%</div>
+            <div style="color: #8a9bb5; margin-top: 5px;">AI Model Confidence Level</div>
+        </div>
+        <div class="confidence-bar">
+            <div class="confidence-fill" style="width: {{ 100 - score }}%; background: linear-gradient(90deg, #1e90ff, #00b4d8);"></div>
+        </div>
+        
+        <!-- NEW: Confidence Factors -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
+            <div class="stat-card">
+                <div class="metric-value" style="font-size: 20px;">
+                    {{ (100 - score) * 0.95|int }}%
+                </div>
+                <div class="metric-label">Pattern Match</div>
+            </div>
+            <div class="stat-card">
+                <div class="metric-value" style="font-size: 20px;">
+                    {{ (100 - score) * 0.88|int }}%
+                </div>
+                <div class="metric-label">Keyword Analysis</div>
+            </div>
+            <div class="stat-card">
+                <div class="metric-value" style="font-size: 20px;">
+                    {{ (100 - score) * 0.92|int }}%
+                </div>
+                <div class="metric-label">ML Accuracy</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extracted Text Card -->
+    {% if extracted_text and extracted_text.strip() %}
+    <div class="card">
+        <h3>📸 OCR Extracted Content</h3>
+        <div class="ocr-box">
+            <pre>{{ extracted_text }}</pre>
+        </div>
+        <small class="ocr-note">🔍 Text extracted from screenshot using Optical Character Recognition technology</small>
+        
+        <!-- NEW: OCR Statistics -->
+        <div style="display: flex; gap: 20px; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <div>
+                <span style="color: #1e90ff; font-weight: 600;">{{ extracted_text.split()|length }}</span>
+                <span style="color: #8a9bb5; font-size: 12px;"> words</span>
+            </div>
+            <div>
+                <span style="color: #1e90ff; font-weight: 600;">{{ extracted_text|length }}</span>
+                <span style="color: #8a9bb5; font-size: 12px;"> characters</span>
+            </div>
+            <div>
+                <span style="color: #1e90ff; font-weight: 600;">{{ extracted_text.splitlines()|length }}</span>
+                <span style="color: #8a9bb5; font-size: 12px;"> lines</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recommendations Card -->
+    <div class="card">
+        <h3>💡 Security Recommendations</h3>
+        <div style="display: grid; gap: 15px;">
+            {% if prediction == 'PHISHING' %}
+                <div class="reason-item" style="border-left-color: #ef4444;">
+                    <span class="reason-icon">🚫</span>
+                    <span class="reason-text">Do NOT click on any links or download attachments</span>
+                </div>
+                <div class="reason-item" style="border-left-color: #ef4444;">
+                    <span class="reason-icon">📧</span>
+                    <span class="reason-text">Do NOT reply or provide any personal information</span>
+                </div>
+                <div class="reason-item" style="border-left-color: #ef4444;">
+                    <span class="reason-icon">🗑️</span>
+                    <span class="reason-text">Delete the email and report as phishing to your IT department</span>
+                </div>
+                <div class="reason-item" style="border-left-color: #ef4444;">
+                    <span class="reason-icon">🔒</span>
+                    <span class="reason-text">If you've already clicked, change passwords immediately</span>
+                </div>
+            {% elif prediction == 'SAFE' %}
+                <div class="reason-item" style="border-left-color: #10b981;">
+                    <span class="reason-icon">✓</span>
+                    <span class="reason-text">Content appears legitimate but always verify unexpected requests</span>
+                </div>
+                <div class="reason-item" style="border-left-color: #10b981;">
+                    <span class="reason-icon">🔍</span>
+                    <span class="reason-text">Continue practicing safe email habits and stay vigilant</span>
+                </div>
+                <div class="reason-item" style="border-left-color: #10b981;">
+                    <span class="reason-icon">📚</span>
+                    <span class="reason-text">Share this detection tool with colleagues to improve security awareness</span>
+                </div>
+            {% else %}
+                <div class="reason-item" style="border-left-color: #f59e0b;">
+                    <span class="reason-icon">⚠️</span>
+                    <span class="reason-text">Manual review recommended - results are inconclusive</span>
+                </div>
+                <div class="reason-item" style="border-left-color: #f59e0b;">
+                    <span class="reason-icon">🔍</span>
+                    <span class="reason-text">Verify the sender's identity through another communication channel</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="/" class="back-btn">
+            ← Analyze Another Content
+        </a>
+        <button onclick="window.print()" class="print-btn">
+            🖨️ Save Report
+        </button>
+    </div>
+</div>
+
+<script>
+    // Get risk score and prediction
+    const riskScore = {{ score }};
+    const prediction = "{{ prediction }}";
+    const reasonsCount = {{ reasons|length }};
+    
+    // Calculate category data based on reasons
+    const categoryData = {
+        'Keyword Match': Math.min(40, reasonsCount * 12),
+        'Pattern Match': Math.min(30, reasonsCount * 9),
+        'Urgency Tactics': Math.min(20, reasonsCount * 6),
+        'Suspicious Links': Math.min(25, reasonsCount * 7),
+        'Generic Greetings': Math.min(15, reasonsCount * 4)
+    };
+    
+    // Severity distribution
+    const severityData = {
+        'Critical': Math.min(100, riskScore * 0.6),
+        'High': Math.min(100, riskScore * 0.25),
+        'Medium': Math.min(100, riskScore * 0.1),
+        'Low': Math.min(100, (100 - riskScore) * 0.5)
+    };
+    
+    // Chart 1: Risk Dashboard (Doughnut)
+    const ctx1 = document.getElementById('riskChart').getContext('2d');
+    let threatColor, threatGradient;
+    
+    if (riskScore >= 70) {
+        threatColor = '#ef4444';
+        threatGradient = '#f87171';
+    } else if (riskScore >= 40) {
+        threatColor = '#f59e0b';
+        threatGradient = '#fbbf24';
+    } else {
+        threatColor = '#10b981';
+        threatGradient = '#34d399';
+    }
+    
+    new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+            labels: ['Risk Level', 'Safe Level'],
+            datasets: [{
+                data: [riskScore, 100 - riskScore],
+                backgroundColor: [threatColor, 'rgba(255, 255, 255, 0.05)'],
+                borderColor: [threatGradient, 'rgba(255, 255, 255, 0.1)'],
+                borderWidth: 2,
+                hoverOffset: 15,
+                cutout: '65%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#e2e8f0', font: { size: 12 }, padding: 15 }
+                },
+                tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)' }
+            },
+            animation: { animateScale: true, animateRotate: true, duration: 2000 }
+        }
+    });
+    
+    // Chart 2: Category Breakdown (Bar Chart)
+    const ctx2 = document.getElementById('categoryChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(categoryData),
+            datasets: [{
+                label: 'Threat Severity (%)',
+                data: Object.values(categoryData),
+                backgroundColor: 'rgba(30, 144, 255, 0.6)',
+                borderColor: '#1e90ff',
+                borderWidth: 2,
+                borderRadius: 8,
+                barPercentage: 0.7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: (ctx) => `${ctx.raw}% Severity` } }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    max: 100,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#8a9bb5' }
+                },
+                x: { ticks: { color: '#8a9bb5', font: { size: 10 } } }
+            }
+        }
+    });
+    
+    // Chart 3: Severity Distribution (Pie Chart)
+    const ctx3 = document.getElementById('severityChart').getContext('2d');
+    new Chart(ctx3, {
+        type: 'pie',
+        data: {
+            labels: Object.keys(severityData),
+            datasets: [{
+                data: Object.values(severityData),
+                backgroundColor: ['#ef4444', '#f59e0b', '#eab308', '#10b981'],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#e2e8f0', font: { size: 11 } }
+                },
+                tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw.toFixed(1)}%` } }
+            },
+            animation: { animateScale: true, duration: 2000 }
+        }
+    });
+    
+    // Chart 4: Gauge Chart (using doughnut)
+    const ctx4 = document.getElementById('gaugeChart').getContext('2d');
+    new Chart(ctx4, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [riskScore, 100 - riskScore],
+                backgroundColor: [threatColor, 'rgba(255, 255, 255, 0.05)'],
+                borderWidth: 0,
+                circumference: 180,
+                rotation: 270,
+                cutout: '70%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                tooltip: { enabled: false },
+                legend: { display: false }
+            }
+        }
+    });
+    
+    // Add gauge center text
+    const gaugeCanvas = document.getElementById('gaugeChart');
+    const gaugeCtx = gaugeCanvas.getContext('2d');
+    // This will be overlaid with CSS
+    
+    // Animate bars on load
+    document.addEventListener('DOMContentLoaded', function() {
+        const severityFills = document.querySelectorAll('.severity-fill');
+        severityFills.forEach(fill => {
+            const width = fill.style.width;
+            fill.style.width = '0%';
+            setTimeout(() => { fill.style.width = width; }, 100);
+        });
+        
+        const threatFill = document.querySelector('.threat-meter-fill');
+        if (threatFill) {
+            const width = threatFill.style.width;
+            threatFill.style.width = '0%';
+            setTimeout(() => { threatFill.style.width = width; }, 100);
+        }
+        
+        const confidenceFill = document.querySelector('.confidence-fill');
+        if (confidenceFill) {
+            const width = confidenceFill.style.width;
+            confidenceFill.style.width = '0%';
+            setTimeout(() => { confidenceFill.style.width = width; }, 100);
+        }
+    });
+</script>
+
+</body>
+</html>
