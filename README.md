@@ -1,58 +1,40 @@
+# 🛡 MailGuard AI
 
-# 🛡️ PHISH-Detector
+AI-powered phishing email detection system built using Flask, Machine Learning, OCR
 
-**AI-powered phishing email detection system** built using Flask, Machine Learning, and OCR technology.
+## Features
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
-![Flask](https://img.shields.io/badge/Flask-2.3.3-green.svg)
-![Machine Learning](https://img.shields.io/badge/ML-Scikit--Learn-orange.svg)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+- Email text analysis
+- Screenshot OCR scanning
+- Risk score generation
+- Safe / Phishing prediction
 
-## 📋 Features
+## Tech Stack
 
-- ✅ **Email text analysis** - Real-time phishing detection in emails
-- 📸 **Screenshot OCR scanning** - Extract and analyze text from images
-- 🎯 **Risk score generation** - 0-100% threat level with visual indicators
-- 🔒 **Safe / Phishing prediction** - Clear binary classification results
-- 📊 **Interactive visualizations** - Charts and dashboards for threat analysis
+- Python
+- Flask
+- Scikit-Learn
+- Tesseract OCR
+- HTML
+- CSS
 
-## 🛠️ Tech Stack
-
-| Category | Technologies |
-|----------|--------------|
-| **Backend** | Python, Flask, Scikit-Learn, Pandas, Joblib |
-| **Frontend** | HTML5, CSS3, JavaScript, Chart.js |
-| **OCR** | Tesseract OCR, Pillow |
-| **ML Algorithms** | Logistic Regression, TF-IDF Vectorization |
-
-## 📸 Screenshots
+## Screenshots
 
 ### Home Page
-![Home](screenshot/Home%20Page.png)
 
-### Phishing Detection Result
-![Phishing Detection](screenshot/Detection1.png)
+![Home](PHISH detector\screenshot\Home Page.png)
+
+### Phishing Detection
+
+![Phishing](PHISH detector\screenshot\Detection1.png)
 
 ### Safe Email Detection
-![Safe Detection](screenshot/Detection2.png)
 
-## 🚀 Installation
+![Safe](PHISH detector\screenshot\Detection2.png)
 
-### Prerequisites
-- Python 3.8 or higher
-- Tesseract OCR installed on your system
+## Installation
 
-### Steps
-
-```bash
-# 1. Install Python dependencies
+'''bash
 pip install -r requirements.txt
-
-# 2. Train the machine learning model
 python train_model.py
-
-# 3. Run the Flask application
-python app1.py
-
-# 4. Open your browser and go to
-http://127.0.0.1:5000
+python app.py
