@@ -1,4 +1,4 @@
-# 🛡 MailGuard AI
+# 🛡 PHISH-Detector
 
 AI-powered phishing email detection system built using Flask, Machine Learning, OCR
 
